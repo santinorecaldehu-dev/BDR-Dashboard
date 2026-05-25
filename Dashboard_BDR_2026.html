@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BDR Dashboard 2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--bg:#f4f5f7;--bg2:#fff;--bg3:#f0f1f4;--surface:#fff;--border:#e2e5eb;--accent:#0ea472;--accent2:#e0456e;--accent3:#5b5fe8;--accent4:#e08c0a;--text:#111827;--text2:#4b5563;--text3:#9ca3af;--font:'Plus Jakarta Sans',sans-serif;--mono:'JetBrains Mono',monospace;--r:12px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+.topbar{position:sticky;top:0;z-index:100;background:rgba(255,255,255,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:56px}
+.topbar::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2),var(--accent3))}
+.topbar-left{display:flex;align-items:center;gap:24px}
+.logo{font-size:15px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);display:flex;align-items:center;gap:8px}
+.logo-dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+.topbar-right{display:flex;gap:8px}
+.btn{font-family:var(--font);font-size:12px;font-weight:600;letter-spacing:.04em;padding:7px 16px;border-radius:6px;cursor:pointer;border:1px solid;transition:all .15s;text-transform:uppercase;background:transparent}
+.btn-ghost{border-color:var(--border);color:var(--text2)}.btn-ghost:hover{border-color:var(--accent);color:var(--accent);background:rgba(14,164,114,.05)}
+.btn-danger{border-color:rgba(224,69,110,.2);color:var(--accent2)}.btn-danger:hover{background:rgba(224,69,110,.06)}
+.layout{display:flex;min-height:calc(100vh - 56px);position:relative}
+.sidebar{width:220px;flex-shrink:0;background:var(--bg2);border-right:1px solid var(--border);padding:24px 0;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto}
+.sidebar-section{padding:0 16px;margin-bottom:8px}
+.sidebar-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);padding:0 8px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);transition:all .15s;border:1px solid transparent;margin-bottom:2px}
+.nav-item:hover{color:var(--text);background:var(--bg3)}
+.nav-item.active{color:var(--accent);background:rgba(14,164,114,.08);border-color:rgba(14,164,114,.15)}
+.nav-icon{width:16px;height:16px;opacity:.7;flex-shrink:0}
+.nav-item.active .nav-icon{opacity:1}
+.month-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:0 16px}
+.m-btn{padding:6px 4px;border-radius:6px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;border:1px solid transparent;transition:all .15s;font-family:var(--mono)}
+.m-btn:hover{color:var(--text2);background:var(--bg3)}
+.m-btn.active{color:var(--accent);background:rgba(14,164,114,.1);border-color:rgba(14,164,114,.2)}
+.m-btn.has-data{color:var(--text2)}
+.q-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:0 16px}
+.q-btn{padding:6px 4px;border-radius:6px;text-align:center;font-size:11px;font-weight:600;color:var(--text3);cursor:pointer;border:1px solid transparent;transition:all .15s;font-family:var(--mono)}
+.q-btn:hover{color:var(--text2);background:var(--bg3)}
+.q-btn.active{color:var(--accent3);background:rgba(91,95,232,.1);border-color:rgba(91,95,232,.2)}
+.q-btn.has-data{color:var(--text2)}
+.sidebar-divider{height:1px;background:var(--border);margin:16px}
+.main{flex:1;padding:28px 32px;overflow-x:hidden}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:28px}
+.page-title{font-size:32px;font-weight:800;line-height:1}
+.page-title span{color:var(--accent)}
+.page-title.q-mode span{color:var(--accent3)}
+.page-subtitle{font-size:13px;color:var(--text3);margin-top:6px;font-family:var(--mono)}
+.sec-title{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.kpi-grid{display:grid;gap:12px;margin-bottom:28px}
+.kpi-2{grid-template-columns:repeat(2,1fr)}.kpi-3{grid-template-columns:repeat(3,1fr)}
+.kpi-4{grid-template-columns:repeat(4,1fr)}.kpi-5{grid-template-columns:repeat(5,1fr)}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;position:relative;overflow:hidden;transition:border-color .2s}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.a::before{background:var(--accent)}.kpi.b::before{background:var(--accent2)}
+.kpi.c::before{background:var(--accent3)}.kpi.d::before{background:var(--accent4)}
+.kpi-label{font-size:11px;color:var(--text3);font-family:var(--mono);margin-bottom:10px;line-height:1.3}
+.kpi-value{font-size:26px;font-weight:800;color:var(--text);line-height:1;display:flex;align-items:baseline;gap:8px}
+.kpi-value.sm{font-size:20px}
+.kpi-pct{font-size:12px;font-weight:500;color:var(--text3);font-family:var(--mono)}
+.kpi-empty{font-size:20px;font-weight:500;color:var(--border)}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:6px;font-family:var(--mono)}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:28px}
+.chart-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.chart-card-title{font-size:13px;font-weight:700;color:var(--text2);letter-spacing:.04em}
+.chart-wrap{position:relative}
+.chart-grid{display:grid;gap:12px;margin-bottom:28px}
+.chart-2{grid-template-columns:repeat(2,1fr)}.chart-3{grid-template-columns:repeat(3,1fr)}
+.chart-1-2{grid-template-columns:1fr 2fr}.chart-2-1{grid-template-columns:2fr 1fr}
+.data-table{width:100%;border-collapse:collapse;font-size:12px;font-family:var(--mono)}
+.data-table th{text-align:left;padding:8px 12px;color:var(--text3);font-weight:500;font-size:10px;letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border)}
+.data-table td{padding:9px 12px;border-bottom:1px solid rgba(226,229,235,.8);color:var(--text2)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table tr:hover td{background:rgba(0,0,0,.01);color:var(--text)}
+.td-num{text-align:right;font-weight:500}.td-bar{min-width:80px}
+.mini-bar{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.mini-bar-fill{height:100%;border-radius:2px;transition:width .4s}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:600;font-family:var(--mono);letter-spacing:.04em}
+.badge-green{background:rgba(14,164,114,.1);color:var(--accent)}
+.badge-pink{background:rgba(224,69,110,.1);color:var(--accent2)}
+.badge-blue{background:rgba(91,95,232,.1);color:var(--accent3)}
+.page{display:none}.page.active{display:block}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.toast{position:fixed;bottom:20px;right:20px;z-index:999;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;color:var(--text);opacity:0;transform:translateY(8px);transition:all .25s;pointer-events:none}
+.toast.show{opacity:1;transform:translateY(0)}
+.no-data-state{text-align:center;padding:60px 20px;color:var(--text3);font-family:var(--mono);font-size:13px}
+#fileInput{display:none}
+@media(max-width:1100px){.kpi-4,.kpi-5{grid-template-columns:repeat(2,1fr)}.chart-2,.chart-3,.chart-1-2{grid-template-columns:1fr}}
+@media(max-width:768px){.sidebar{display:none}.main{padding:16px}.kpi-3,.kpi-4,.kpi-5{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-left">
+    <div class="logo"><div class="logo-dot"></div>BDR Metrics</div>
+    <span style="font-size:12px;color:var(--text3);font-family:var(--mono)">2026</span>
+  </div>
+  <div class="topbar-right">
+    <button class="btn btn-ghost" onclick="document.getElementById('fileInput').click()">↑ Importar Excel</button>
+    <input id="gsu" type="text" placeholder="Link Google Sheet..." style="font-family:var(--font);font-size:11px;padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--bg3);color:var(--text);outline:none;width:200px;">
+    <button class="btn btn-ghost" onclick="connectSheet()">⟳ Sheet</button>
+    <button class="btn btn-ghost" onclick="downloadHTML()">↓ Descargar HTML</button>
+    <button class="btn btn-danger" onclick="clearData()">⊘ Limpiar</button>
+    <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="importExcel(event)">
+  </div>
+</div>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Navegación</div>
+      <div class="nav-item active" onclick="showPage('actividad')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>Actividad
+      </div>
+      <div class="nav-item" onclick="showPage('demos')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.869v6.262a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>Demos
+      </div>
+      <div class="nav-item" onclick="showPage('okrs')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>OKRs
+      </div>
+      <div class="nav-item" onclick="showPage('won')">
+        <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>Won
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label" style="margin-bottom:10px">Mes</div>
+      <div class="month-grid" id="monthGrid"></div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="sidebar-label" style="margin-bottom:10px">Por Q</div>
+      <div class="q-grid" id="qGrid"></div>
+    </div>
+  </aside>
+  <main class="main">
+
+    <!-- ACTIVIDAD -->
+    <div class="page active" id="page-actividad">
+      <div class="page-header"><div>
+        <div class="page-title" id="title-actividad">Mayo <span>2026</span></div>
+        <div class="page-subtitle">Actividad & KPIs</div>
+      </div></div>
+      <div class="sec-title">Actividad General</div>
+      <div class="kpi-grid kpi-3" style="margin-bottom:12px">
+        <div class="kpi a"><div class="kpi-label">Actividad total</div><div class="kpi-value" id="k-act-total"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi b"><div class="kpi-label">Deals contactados</div><div class="kpi-value" id="k-deals"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi c"><div class="kpi-label">Días cargados</div><div class="kpi-value" id="k-dias"><span class="kpi-empty">—</span></div></div>
+      </div>
+      <div class="kpi-grid kpi-5" style="margin-bottom:28px">
+        <div class="kpi a"><div class="kpi-label">Llamadas</div><div class="kpi-value" id="k-llamadas"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi a"><div class="kpi-label">Llamadas conectadas</div><div class="kpi-value" id="k-llamadas-con"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi b"><div class="kpi-label">WhatsApp</div><div class="kpi-value" id="k-wa"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi b"><div class="kpi-label">Correos</div><div class="kpi-value" id="k-correos"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi c"><div class="kpi-label">LinkedIn</div><div class="kpi-value" id="k-linkedin"><span class="kpi-empty">—</span></div></div>
+      </div>
+      <div class="sec-title">KPIs</div>
+      <div class="kpi-grid kpi-4" style="margin-bottom:28px">
+        <div class="kpi a"><div class="kpi-label">Act. prom. / día</div><div class="kpi-value sm" id="k-act-prom"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi b"><div class="kpi-label">Deals prom. / día</div><div class="kpi-value sm" id="k-deals-prom"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi c"><div class="kpi-label">Act. prom. / deal</div><div class="kpi-value sm" id="k-act-deal"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi d"><div class="kpi-label">Call answer rate</div><div class="kpi-value sm" id="k-call-rate"><span class="kpi-empty">—</span></div></div>
+      </div>
+      <div class="sec-title">Evolución mensual</div>
+      <div class="chart-card">
+        <div class="chart-card-header"><div class="chart-card-title">Actividad total por mes</div>
+          <div style="display:flex;gap:12px;font-size:11px;font-family:var(--mono);color:var(--text3)"><span style="color:var(--accent)">— Actividad</span><span style="color:var(--accent2)">— Deals</span></div>
+        </div>
+        <div class="chart-wrap" style="height:220px"><canvas id="chart-evolucion"></canvas></div>
+      </div>
+      <div class="chart-grid chart-2">
+        <div class="chart-card" style="margin-bottom:0"><div class="chart-card-header"><div class="chart-card-title">Mix de canales</div></div><div class="chart-wrap" style="height:200px"><canvas id="chart-canales"></canvas></div></div>
+        <div class="chart-card" style="margin-bottom:0"><div class="chart-card-header"><div class="chart-card-title">Call answer rate mensual</div></div><div class="chart-wrap" style="height:200px"><canvas id="chart-call-rate"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- DEMOS -->
+    <div class="page" id="page-demos">
+      <div class="page-header"><div>
+        <div class="page-title" id="title-demos">Mayo <span>2026</span></div>
+        <div class="page-subtitle">Análisis de Demos</div>
+      </div></div>
+      <div class="sec-title">KPIs Demo</div>
+      <div class="kpi-grid kpi-4" style="margin-bottom:12px">
+        <div class="kpi a"><div class="kpi-label">Total demos</div><div class="kpi-value" id="k-total-demos"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi b"><div class="kpi-label">Won</div><div class="kpi-value" id="k-won"><span class="kpi-empty">—</span></div><div class="kpi-sub" id="k-won-pct"></div></div>
+        <div class="kpi c"><div class="kpi-label">No show</div><div class="kpi-value" id="k-noshow"><span class="kpi-empty">—</span></div><div class="kpi-sub" id="k-noshow-pct"></div></div>
+        <div class="kpi d"><div class="kpi-label">Pts promedio / demo</div><div class="kpi-value sm" id="k-pts-demo"><span class="kpi-empty">—</span></div></div>
+      </div>
+      <div class="kpi-grid kpi-4" style="margin-bottom:28px">
+        <div class="kpi a"><div class="kpi-label">Pts prom / DM</div><div class="kpi-value sm" id="k-pts-dm"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi b"><div class="kpi-label">Pts prom / Size</div><div class="kpi-value sm" id="k-pts-size"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi c"><div class="kpi-label">Días 1er contacto → Schedule demo</div><div class="kpi-value sm" id="k-dias-sched"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi d"><div class="kpi-label">Días 1er contacto → demo</div><div class="kpi-value sm" id="k-dias-demo"><span class="kpi-empty">—</span></div></div>
+      </div>
+      <div class="sec-title">Conversión por canal</div>
+      <div class="chart-grid chart-1-2" style="margin-bottom:28px">
+        <div class="chart-card" style="margin-bottom:0"><div class="chart-card-header"><div class="chart-card-title">Demos por canal</div></div><div class="chart-wrap" style="height:220px"><canvas id="chart-canal-pie"></canvas></div></div>
+        <div class="chart-card" style="margin-bottom:0"><div class="chart-card-header"><div class="chart-card-title">Tasa de conversión por canal</div></div><div class="chart-wrap" style="height:220px"><canvas id="chart-tasa-canal"></canvas></div></div>
+      </div>
+      <div class="sec-title">Distribución</div>
+      <div class="chart-grid chart-2" style="margin-bottom:12px">
+        <div class="chart-card" style="margin-bottom:0"><div class="chart-card-header"><div class="chart-card-title">Por día de la semana</div></div><div class="chart-wrap" style="height:200px"><canvas id="chart-dias-semana"></canvas></div></div>
+        <div class="chart-card" style="margin-bottom:0"><div class="chart-card-header"><div class="chart-card-title">Por país</div></div><div class="chart-wrap" style="height:200px"><canvas id="chart-paises"></canvas></div></div>
+      </div>
+      <div class="chart-grid chart-3" style="margin-bottom:28px">
+        <div class="chart-card" style="margin-bottom:0"><div class="chart-card-header"><div class="chart-card-title">SQO vs Prode</div></div><div class="chart-wrap" style="height:180px"><canvas id="chart-sqo-prode"></canvas></div></div>
+        <div class="chart-card" style="margin-bottom:0"><div class="chart-card-header"><div class="chart-card-title">SMB vs Growth</div></div><div class="chart-wrap" style="height:180px"><canvas id="chart-smb-growth"></canvas></div></div>
+        <div class="chart-card" style="margin-bottom:0"><div class="chart-card-header"><div class="chart-card-title">Outbound vs Lumo Inbound</div></div><div class="chart-wrap" style="height:180px"><canvas id="chart-source"></canvas></div></div>
+      </div>
+      <div class="sec-title">Demos por industria</div>
+      <div class="chart-card"><div class="chart-card-header"><div class="chart-card-title">Industrias</div></div><div id="industry-table-wrap"></div></div>
+    </div>
+
+    <!-- OKRs -->
+    <div class="page" id="page-okrs">
+      <div class="page-header"><div>
+        <div class="page-title" id="title-okrs">Mayo <span>2026</span></div>
+        <div class="page-subtitle">OKRs & Pipeline</div>
+      </div></div>
+      <div class="sec-title">Puntos</div>
+      <div class="kpi-grid kpi-3" style="margin-bottom:28px">
+        <div class="kpi a"><div class="kpi-label">Objetivo</div><div class="kpi-value" id="k-pts-obj"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi b"><div class="kpi-label">Actuales</div><div class="kpi-value" id="k-pts-act"><span class="kpi-empty">—</span></div><div class="kpi-sub" id="k-pts-act-pct"></div></div>
+        <div class="kpi c"><div class="kpi-label">Validados</div><div class="kpi-value" id="k-pts-val"><span class="kpi-empty">—</span></div><div class="kpi-sub" id="k-pts-val-pct"></div></div>
+      </div>
+      <div class="sec-title">Pipeline</div>
+      <div class="kpi-grid kpi-3" style="margin-bottom:12px">
+        <div class="kpi a"><div class="kpi-label">Objetivo</div><div class="kpi-value sm" id="k-pipe-obj"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi b"><div class="kpi-label">Outbound generado</div><div class="kpi-value sm" id="k-pipe-gen"><span class="kpi-empty">—</span></div><div class="kpi-sub" id="k-pipe-gen-pct"></div></div>
+        <div class="kpi c"><div class="kpi-label">Prom. SQO</div><div class="kpi-value sm" id="k-pipe-sqo"><span class="kpi-empty">—</span></div></div>
+      </div>
+      <div class="kpi-grid kpi-3" style="margin-bottom:28px">
+        <div class="kpi a"><div class="kpi-label">Outbound activo</div><div class="kpi-value sm" id="k-pipe-out-act"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi b"><div class="kpi-label">Inbound activo</div><div class="kpi-value sm" id="k-pipe-in-act"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi c"><div class="kpi-label">SQO outbound</div><div class="kpi-value sm" id="k-sqo"><span class="kpi-empty">—</span></div></div>
+      </div>
+      <div class="sec-title">Cierre & Bonos</div>
+      <div class="kpi-grid kpi-4" style="margin-bottom:28px">
+        <div class="kpi a"><div class="kpi-label">Cierre objetivo (8%)</div><div class="kpi-value sm" id="k-cierre-obj"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi b"><div class="kpi-label">Cierre MRR outbound</div><div class="kpi-value sm" id="k-cierre-out"><span class="kpi-empty">—</span></div><div class="kpi-sub" id="k-cierre-pct"></div></div>
+        <div class="kpi c"><div class="kpi-label">Cierre MRR inbound</div><div class="kpi-value sm" id="k-cierre-in"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi d"><div class="kpi-label">Total extra $</div><div class="kpi-value sm" id="k-total-extra"><span class="kpi-empty">—</span></div></div>
+      </div>
+      <div class="sec-title">Evolución pipeline</div>
+      <div class="chart-card"><div class="chart-card-header"><div class="chart-card-title">Pipeline generado vs objetivo</div></div><div class="chart-wrap" style="height:220px"><canvas id="chart-pipeline"></canvas></div></div>
+      <div class="chart-grid chart-2">
+        <div class="chart-card" style="margin-bottom:0"><div class="chart-card-header"><div class="chart-card-title">Puntos actuales vs objetivo</div></div><div class="chart-wrap" style="height:200px"><canvas id="chart-puntos"></canvas></div></div>
+        <div class="chart-card" style="margin-bottom:0"><div class="chart-card-header"><div class="chart-card-title">Outbound vs Inbound activo</div></div><div class="chart-wrap" style="height:200px"><canvas id="chart-pipe-mix"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- WON -->
+    <div class="page" id="page-won">
+      <div class="page-header"><div>
+        <div class="page-title">Won <span>2026</span></div>
+        <div class="page-subtitle">Análisis de cierres</div>
+      </div></div>
+      <div class="sec-title">Métricas clave</div>
+      <div class="kpi-grid kpi-4" style="margin-bottom:28px">
+        <div class="kpi a"><div class="kpi-label">ARR Won total</div><div class="kpi-value" id="w-arr"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi b"><div class="kpi-label">Deals won</div><div class="kpi-value" id="w-total"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi c"><div class="kpi-label">Días prom. demo → won</div><div class="kpi-value sm" id="w-days-won"><span class="kpi-empty">—</span></div></div>
+        <div class="kpi d"><div class="kpi-label">Días prom. won → 1MRR</div><div class="kpi-value sm" id="w-days-mrr"><span class="kpi-empty">—</span></div></div>
+      </div>
+      <div class="kpi-grid kpi-3" style="margin-bottom:28px">
+        <div class="kpi a"><div class="kpi-label">% Won / demos acumuladas</div><div class="kpi-value sm" id="w-won-pct-acum"><span class="kpi-empty">—</span></div><div class="kpi-sub">al cierre del mes seleccionado</div></div>
+      </div>
+      <div class="sec-title">Won por mes</div>
+      <div class="chart-card" style="margin-bottom:16px"><div class="chart-card-header"><div class="chart-card-title">MRR cerrado por mes</div><div style="display:flex;gap:12px;font-size:11px;font-family:var(--mono);color:var(--text3)"><span style="color:var(--accent)">▪ Outbound</span><span style="color:var(--accent2)">▪ Inbound</span></div></div><div class="chart-wrap" style="height:220px"><canvas id="chart-won-mrr"></canvas></div></div>
+      <div class="chart-card" style="margin-bottom:28px"><div class="chart-card-header"><div class="chart-card-title">% Won sobre demos acumuladas — evolución mensual</div></div><div class="chart-wrap" style="height:200px"><canvas id="chart-won-pct"></canvas></div></div>
+      <div class="sec-title">Deals cerrados</div>
+      <div id="won-deals-table"></div>
+    </div>
+
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const MONTHS=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const MONTHS_SHORT=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const QUARTERS=['Q1','Q2','Q3','Q4'];
+const INDUSTRIES=['Agriculture','Airlines & Transportation & Logistics','Automotive','Chemicals / Químicas','Construction','Consulting Services','Consumer goods','Education','Financial services','Funeral Homes','Healthcare','Hospitality & Tourism','Insurance','Manufacturing','Media & Entertainment','Mining','Oil & Energy','Other','Pharmaceuticals','Real State','Retail','Software Companies & IT services','Telecomunications'];
+const ROW_MAP={3:'dias',4:'deals',5:'llamadas',6:'llamadas_con',7:'whatsapp',8:'correos',9:'linkedin',10:'act_total',11:'act_prom_dia',12:'deals_prom_dia',13:'act_prom_deal',14:'call_rate',16:'pts_obj',17:'pts_act',18:'pts_act_pct',19:'pts_val',20:'pts_val_pct',21:'pipe_obj',22:'pipe_gen',23:'pipe_gen_pct',24:'pipe_out_act',25:'pipe_in_act',26:'sqo',27:'pipe_sqo_prom',28:'cierre_obj',29:'cierre_out',30:'cierre_in',31:'cierre_pct',32:'comisiones',33:'bono_out',34:'bono_in',35:'total_extra',37:'total_demos',38:'pts_demo',39:'pts_dm',40:'pts_size',41:'noshow',42:'noshow_pct',43:'dias_sched',44:'dias_demo',45:'won',46:'demo_wa',47:'demo_wa_pct',48:'demo_ll',49:'demo_ll_pct',50:'demo_li',51:'demo_li_pct',52:'demo_co',53:'demo_co_pct',54:'demo_lumo',55:'demo_lumo_pct',56:'tc_deals',57:'tc_act',58:'tc_ll',59:'tc_llc',60:'tc_wa',61:'tc_li',62:'tc_co',63:'lunes',64:'lunes_pct',65:'martes',66:'martes_pct',67:'mierc',68:'mierc_pct',69:'jueves',70:'jueves_pct',71:'viernes',72:'viernes_pct',73:'arg',74:'arg_pct',75:'par',76:'par_pct',77:'uru',78:'uru_pct',79:'otro',80:'otro_pct',81:'sqo_demo',82:'sqo_demo_pct',83:'prode',84:'prode_pct',85:'smb',86:'smb_pct',87:'growth',88:'growth_pct',89:'outbound_demo',90:'outbound_demo_pct',91:'lumo_in',92:'lumo_in_pct'};
+
+let currentKey='Mayo'; // mes o Q activo
+let currentMode='month'; // 'month' | 'quarter'
+let currentPage='actividad';
+const charts={};
+
+let DATA={"months": {"Enero": {"industries": {}}, "Febrero": {"industries": {}}, "Marzo": {"dias": 15.0, "deals": 138.0, "llamadas": 525.0, "llamadas_con": 76.0, "whatsapp": 225.0, "correos": 318.0, "linkedin": 75.0, "act_total": 1143.0, "act_prom_dia": 76.2, "deals_prom_dia": 9.2, "act_prom_deal": 8.282609, "call_rate": 0.144762, "pts_obj": 6.0, "pts_act": 4.55, "pts_act_pct": 0.758333, "pts_val": 4.55, "pts_val_pct": 1.0, "pipe_obj": 1548.0, "pipe_gen": 1028.0, "pipe_gen_pct": 0.664083, "pipe_out_act": 288.0, "pipe_in_act": 140.0, "sqo": 5.0, "pipe_sqo_prom": 205.6, "cierre_obj": 123.84, "cierre_out": 0.0, "cierre_in": 0.0, "cierre_pct": 0.0, "comisiones": 0.0, "bono_out": 0.0, "bono_in": 0.0, "total_extra": 0.0, "total_demos": 6.0, "pts_demo": 1.25, "pts_dm": 1.4, "pts_size": 1.1, "noshow": 2.0, "noshow_pct": 0.333333, "dias_sched": 0.6, "dias_demo": 5.4, "won": 0.0, "demo_wa": 3.0, "demo_wa_pct": 0.5, "demo_ll": 2.0, "demo_ll_pct": 0.333333, "demo_li": 0.0, "demo_li_pct": 0.0, "demo_co": 0.0, "demo_co_pct": 0.0, "demo_lumo": 1.0, "demo_lumo_pct": 0.166667, "tc_deals": 0.043478, "tc_act": 0.005249, "tc_ll": 0.00381, "tc_llc": 0.026316, "tc_wa": 0.013333, "tc_li": 0.0, "tc_co": 0.0, "lunes": 1.0, "lunes_pct": 0.166667, "martes": 1.0, "martes_pct": 0.166667, "mierc": 1.0, "mierc_pct": 0.166667, "jueves": 0.0, "jueves_pct": 0.0, "viernes": 3.0, "viernes_pct": 0.5, "arg": 5.0, "arg_pct": 0.833333, "par": 0.0, "par_pct": 0.0, "uru": 1.0, "uru_pct": 0.166667, "otro": 0.0, "otro_pct": 0.0, "sqo_demo": 6.0, "sqo_demo_pct": 1.0, "prode": 0.0, "prode_pct": 0.0, "smb": 5.0, "smb_pct": 0.833333, "growth": 1.0, "growth_pct": 0.166667, "outbound_demo": 5.0, "outbound_demo_pct": 0.833333, "lumo_in": 1.0, "lumo_in_pct": 0.166667, "industries": {"Agriculture": 0, "Airlines & Transportation & Logistics": 0, "Automotive": 1, "Chemicals / Químicas": 0, "Construction": 0, "Consulting Services": 1, "Consumer goods": 0, "Education": 0, "Financial services": 0, "Funeral Homes": 0, "Healthcare": 1, "Hospitality & Tourism": 0, "Insurance": 0, "Manufacturing": 1, "Media & Entertainment": 0, "Mining": 0, "Oil & Energy": 1, "Other": 0, "Pharmaceuticals": 0, "Real State": 0, "Retail": 0, "Software Companies & IT services": 0, "Telecomunications": 1}}, "Abril": {"dias": 18.0, "deals": 212.0, "llamadas": 603.0, "llamadas_con": 107.0, "whatsapp": 270.0, "correos": 183.0, "linkedin": 18.0, "act_total": 1074.0, "act_prom_dia": 59.666667, "deals_prom_dia": 11.777778, "act_prom_deal": 5.066038, "call_rate": 0.177446, "pts_obj": 12.0, "pts_act": 17.0, "pts_act_pct": 1.416667, "pts_val": 17.0, "pts_val_pct": 1.0, "pipe_obj": 3096.0, "pipe_gen": 4227.0, "pipe_gen_pct": 1.36531, "pipe_out_act": 2802.0, "pipe_in_act": 0.0, "sqo": 14.0, "pipe_sqo_prom": 301.928571, "cierre_obj": 247.68, "cierre_out": 0.0, "cierre_in": 0.0, "cierre_pct": 0.0, "comisiones": 250.0, "bono_out": 0.0, "bono_in": 0.0, "total_extra": 250.0, "total_demos": 17.0, "pts_demo": 1.21875, "pts_dm": 1.40625, "pts_size": 1.0625, "noshow": 3.0, "noshow_pct": 0.176471, "dias_sched": 12.4375, "dias_demo": 20.6875, "won": 1.0, "demo_wa": 7.0, "demo_wa_pct": 0.411765, "demo_ll": 5.0, "demo_ll_pct": 0.294118, "demo_li": 0.0, "demo_li_pct": 0.0, "demo_co": 4.0, "demo_co_pct": 0.235294, "demo_lumo": 1.0, "demo_lumo_pct": 0.058824, "tc_deals": 0.080189, "tc_act": 0.015829, "tc_ll": 0.008292, "tc_llc": 0.046729, "tc_wa": 0.025926, "tc_li": 0.0, "tc_co": 0.021858, "lunes": 7.0, "lunes_pct": 0.411765, "martes": 3.0, "martes_pct": 0.176471, "mierc": 3.0, "mierc_pct": 0.176471, "jueves": 2.0, "jueves_pct": 0.117647, "viernes": 2.0, "viernes_pct": 0.117647, "arg": 12.0, "arg_pct": 0.705882, "par": 3.0, "par_pct": 0.176471, "uru": 0.0, "uru_pct": 0.0, "otro": 2.0, "otro_pct": 0.117647, "sqo_demo": 15.0, "sqo_demo_pct": 0.882353, "prode": 2.0, "prode_pct": 0.117647, "smb": 14.0, "smb_pct": 0.823529, "growth": 3.0, "growth_pct": 0.176471, "outbound_demo": 16.0, "outbound_demo_pct": 0.941176, "lumo_in": 1.0, "lumo_in_pct": 0.058824, "industries": {"Agriculture": 1, "Airlines & Transportation & Logistics": 2, "Automotive": 0, "Chemicals / Químicas": 1, "Construction": 2, "Consulting Services": 0, "Consumer goods": 1, "Education": 0, "Financial services": 0, "Funeral Homes": 1, "Healthcare": 2, "Hospitality & Tourism": 0, "Insurance": 1, "Manufacturing": 6, "Media & Entertainment": 0, "Mining": 0, "Oil & Energy": 0, "Other": 0, "Pharmaceuticals": 0, "Real State": 0, "Retail": 0, "Software Companies & IT services": 0, "Telecomunications": 0}}, "Mayo": {"dias": 15.0, "deals": 235.0, "llamadas": 504.0, "llamadas_con": 97.0, "whatsapp": 194.0, "correos": 982.0, "linkedin": 196.0, "act_total": 1876.0, "act_prom_dia": 125.066667, "deals_prom_dia": 15.666667, "act_prom_deal": 7.982979, "call_rate": 0.19246, "pts_obj": 20.0, "pts_act": 19.35, "pts_act_pct": 0.9675, "pts_val": 13.55, "pts_val_pct": 0.700258, "pipe_obj": 5160.0, "pipe_gen": 2331.0, "pipe_gen_pct": 0.451744, "pipe_out_act": 2011.0, "pipe_in_act": 250.0, "sqo": 12.0, "pipe_sqo_prom": 194.25, "cierre_obj": 412.8, "cierre_out": 340.0, "cierre_in": 0.0, "cierre_pct": 0.823643, "comisiones": 0.0, "bono_out": 51.0, "bono_in": 0.0, "total_extra": 51.0, "total_demos": 17.0, "pts_demo": 1.316667, "pts_dm": 1.433333, "pts_size": 1.2, "noshow": 1.0, "noshow_pct": 0.058824, "dias_sched": 28.066667, "dias_demo": 35.266667, "won": 1.0, "demo_wa": 10.0, "demo_wa_pct": 0.588235, "demo_ll": 4.0, "demo_ll_pct": 0.235294, "demo_li": 3.0, "demo_li_pct": 0.176471, "demo_co": 0.0, "demo_co_pct": 0.0, "demo_lumo": 0.0, "demo_lumo_pct": 0.0, "tc_deals": 0.07234, "tc_act": 0.009062, "tc_ll": 0.007937, "tc_llc": 0.041237, "tc_wa": 0.051546, "tc_li": 0.015306, "tc_co": 0.0, "lunes": 1.0, "lunes_pct": 0.058824, "martes": 7.0, "martes_pct": 0.411765, "mierc": 2.0, "mierc_pct": 0.117647, "jueves": 2.0, "jueves_pct": 0.117647, "viernes": 5.0, "viernes_pct": 0.294118, "arg": 11.0, "arg_pct": 0.647059, "par": 3.0, "par_pct": 0.176471, "uru": 2.0, "uru_pct": 0.117647, "otro": 1.0, "otro_pct": 0.058824, "sqo_demo": 14.0, "sqo_demo_pct": 0.823529, "prode": 3.0, "prode_pct": 0.176471, "smb": 15.0, "smb_pct": 0.882353, "growth": 2.0, "growth_pct": 0.117647, "outbound_demo": 15.0, "outbound_demo_pct": 0.882353, "lumo_in": 2.0, "lumo_in_pct": 0.117647, "industries": {"Agriculture": 2, "Airlines & Transportation & Logistics": 2, "Automotive": 0, "Chemicals / Químicas": 0, "Construction": 2, "Consulting Services": 0, "Consumer goods": 0, "Education": 0, "Financial services": 0, "Funeral Homes": 0, "Healthcare": 2, "Hospitality & Tourism": 0, "Insurance": 0, "Manufacturing": 4, "Media & Entertainment": 1, "Mining": 0, "Oil & Energy": 1, "Other": 0, "Pharmaceuticals": 1, "Real State": 0, "Retail": 1, "Software Companies & IT services": 1, "Telecomunications": 0}}, "Junio": {"dias": 0.0, "deals": 0.0, "llamadas": 0.0, "llamadas_con": 0.0, "whatsapp": 0.0, "correos": 0.0, "linkedin": 0.0, "act_total": 0.0, "pts_obj": 18.0, "pts_act": 0.0, "pts_act_pct": 0.0, "pts_val": 0.0, "pipe_obj": 5160.0, "pipe_gen": 0.0, "pipe_gen_pct": 0.0, "pipe_out_act": 0.0, "pipe_in_act": 0.0, "sqo": 0.0, "cierre_obj": 412.8, "cierre_out": 0.0, "cierre_in": 0.0, "cierre_pct": 0.0, "comisiones": 0.0, "bono_out": 0.0, "bono_in": 0.0, "total_extra": 0.0, "total_demos": 0.0, "noshow": 0.0, "won": 0.0, "demo_wa": 0.0, "demo_ll": 0.0, "demo_li": 0.0, "demo_co": 0.0, "demo_lumo": 0.0, "lunes": 0.0, "martes": 0.0, "mierc": 0.0, "jueves": 0.0, "viernes": 0.0, "arg": 0.0, "par": 0.0, "uru": 0.0, "otro": 0.0, "sqo_demo": 0.0, "prode": 0.0, "smb": 0.0, "growth": 0.0, "outbound_demo": 0.0, "lumo_in": 0.0, "industries": {"Agriculture": 0, "Airlines & Transportation & Logistics": 0, "Automotive": 0, "Chemicals / Químicas": 0, "Construction": 0, "Consulting Services": 0, "Consumer goods": 0, "Education": 0, "Financial services": 0, "Funeral Homes": 0, "Healthcare": 0, "Hospitality & Tourism": 0, "Insurance": 0, "Manufacturing": 0, "Media & Entertainment": 0, "Mining": 0, "Oil & Energy": 0, "Other": 0, "Pharmaceuticals": 0, "Real State": 0, "Retail": 0, "Software Companies & IT services": 0, "Telecomunications": 0}}, "Julio": {"dias": 0.0, "deals": 0.0, "llamadas": 0.0, "llamadas_con": 0.0, "whatsapp": 0.0, "correos": 0.0, "linkedin": 0.0, "act_total": 0.0, "pts_act": 0.0, "pts_val": 0.0, "pipe_obj": 5160.0, "pipe_gen": 0.0, "pipe_gen_pct": 0.0, "pipe_out_act": 0.0, "pipe_in_act": 0.0, "sqo": 0.0, "cierre_obj": 412.8, "cierre_out": 0.0, "cierre_in": 0.0, "cierre_pct": 0.0, "comisiones": 0.0, "bono_out": 0.0, "bono_in": 0.0, "total_extra": 0.0, "total_demos": 0.0, "noshow": 0.0, "won": 0.0, "demo_wa": 0.0, "demo_ll": 0.0, "demo_li": 0.0, "demo_co": 0.0, "demo_lumo": 0.0, "lunes": 0.0, "martes": 0.0, "mierc": 0.0, "jueves": 0.0, "viernes": 0.0, "arg": 0.0, "par": 0.0, "uru": 0.0, "otro": 0.0, "sqo_demo": 0.0, "prode": 0.0, "smb": 0.0, "growth": 0.0, "outbound_demo": 0.0, "lumo_in": 0.0, "industries": {"Agriculture": 0, "Airlines & Transportation & Logistics": 0, "Automotive": 0, "Chemicals / Químicas": 0, "Construction": 0, "Consulting Services": 0, "Consumer goods": 0, "Education": 0, "Financial services": 0, "Funeral Homes": 0, "Healthcare": 0, "Hospitality & Tourism": 0, "Insurance": 0, "Manufacturing": 0, "Media & Entertainment": 0, "Mining": 0, "Oil & Energy": 0, "Other": 0, "Pharmaceuticals": 0, "Real State": 0, "Retail": 0, "Software Companies & IT services": 0, "Telecomunications": 0}}, "Agosto": {"dias": 0.0, "deals": 0.0, "llamadas": 0.0, "llamadas_con": 0.0, "whatsapp": 0.0, "correos": 0.0, "linkedin": 0.0, "act_total": 0.0, "pts_act": 0.0, "pts_val": 0.0, "pipe_obj": 5160.0, "pipe_gen": 0.0, "pipe_gen_pct": 0.0, "pipe_out_act": 0.0, "pipe_in_act": 0.0, "sqo": 0.0, "cierre_obj": 412.8, "cierre_out": 0.0, "cierre_in": 0.0, "cierre_pct": 0.0, "comisiones": 0.0, "bono_out": 0.0, "bono_in": 0.0, "total_extra": 0.0, "total_demos": 0.0, "noshow": 0.0, "won": 0.0, "demo_wa": 0.0, "demo_ll": 0.0, "demo_li": 0.0, "demo_co": 0.0, "demo_lumo": 0.0, "lunes": 0.0, "martes": 0.0, "mierc": 0.0, "jueves": 0.0, "viernes": 0.0, "arg": 0.0, "par": 0.0, "uru": 0.0, "otro": 0.0, "sqo_demo": 0.0, "prode": 0.0, "smb": 0.0, "growth": 0.0, "outbound_demo": 0.0, "lumo_in": 0.0, "industries": {"Agriculture": 0, "Airlines & Transportation & Logistics": 0, "Automotive": 0, "Chemicals / Químicas": 0, "Construction": 0, "Consulting Services": 0, "Consumer goods": 0, "Education": 0, "Financial services": 0, "Funeral Homes": 0, "Healthcare": 0, "Hospitality & Tourism": 0, "Insurance": 0, "Manufacturing": 0, "Media & Entertainment": 0, "Mining": 0, "Oil & Energy": 0, "Other": 0, "Pharmaceuticals": 0, "Real State": 0, "Retail": 0, "Software Companies & IT services": 0, "Telecomunications": 0}}, "Septiembre": {"dias": 0.0, "deals": 0.0, "llamadas": 0.0, "llamadas_con": 0.0, "whatsapp": 0.0, "correos": 0.0, "linkedin": 0.0, "act_total": 0.0, "pts_act": 0.0, "pts_val": 0.0, "pipe_obj": 5160.0, "pipe_gen": 0.0, "pipe_gen_pct": 0.0, "pipe_out_act": 0.0, "pipe_in_act": 0.0, "sqo": 0.0, "cierre_obj": 412.8, "cierre_out": 0.0, "cierre_in": 0.0, "cierre_pct": 0.0, "comisiones": 0.0, "bono_out": 0.0, "bono_in": 0.0, "total_extra": 0.0, "total_demos": 0.0, "noshow": 0.0, "won": 0.0, "demo_wa": 0.0, "demo_ll": 0.0, "demo_li": 0.0, "demo_co": 0.0, "demo_lumo": 0.0, "lunes": 0.0, "martes": 0.0, "mierc": 0.0, "jueves": 0.0, "viernes": 0.0, "arg": 0.0, "par": 0.0, "uru": 0.0, "otro": 0.0, "sqo_demo": 0.0, "prode": 0.0, "smb": 0.0, "growth": 0.0, "outbound_demo": 0.0, "lumo_in": 0.0, "industries": {"Agriculture": 0, "Airlines & Transportation & Logistics": 0, "Automotive": 0, "Chemicals / Químicas": 0, "Construction": 0, "Consulting Services": 0, "Consumer goods": 0, "Education": 0, "Financial services": 0, "Funeral Homes": 0, "Healthcare": 0, "Hospitality & Tourism": 0, "Insurance": 0, "Manufacturing": 0, "Media & Entertainment": 0, "Mining": 0, "Oil & Energy": 0, "Other": 0, "Pharmaceuticals": 0, "Real State": 0, "Retail": 0, "Software Companies & IT services": 0, "Telecomunications": 0}}, "Octubre": {"dias": 0.0, "deals": 0.0, "llamadas": 0.0, "llamadas_con": 0.0, "whatsapp": 0.0, "correos": 0.0, "linkedin": 0.0, "act_total": 0.0, "pts_act": 0.0, "pts_val": 0.0, "pipe_obj": 5160.0, "pipe_gen": 0.0, "pipe_gen_pct": 0.0, "pipe_out_act": 0.0, "pipe_in_act": 0.0, "sqo": 0.0, "cierre_obj": 412.8, "cierre_out": 0.0, "cierre_in": 0.0, "cierre_pct": 0.0, "comisiones": 0.0, "bono_out": 0.0, "bono_in": 0.0, "total_extra": 0.0, "total_demos": 0.0, "noshow": 0.0, "won": 0.0, "demo_wa": 0.0, "demo_ll": 0.0, "demo_li": 0.0, "demo_co": 0.0, "demo_lumo": 0.0, "lunes": 0.0, "martes": 0.0, "mierc": 0.0, "jueves": 0.0, "viernes": 0.0, "arg": 0.0, "par": 0.0, "uru": 0.0, "otro": 0.0, "sqo_demo": 0.0, "prode": 0.0, "smb": 0.0, "growth": 0.0, "outbound_demo": 0.0, "lumo_in": 0.0, "industries": {"Agriculture": 0, "Airlines & Transportation & Logistics": 0, "Automotive": 0, "Chemicals / Químicas": 0, "Construction": 0, "Consulting Services": 0, "Consumer goods": 0, "Education": 0, "Financial services": 0, "Funeral Homes": 0, "Healthcare": 0, "Hospitality & Tourism": 0, "Insurance": 0, "Manufacturing": 0, "Media & Entertainment": 0, "Mining": 0, "Oil & Energy": 0, "Other": 0, "Pharmaceuticals": 0, "Real State": 0, "Retail": 0, "Software Companies & IT services": 0, "Telecomunications": 0}}, "Noviembre": {"dias": 0.0, "deals": 0.0, "llamadas": 0.0, "llamadas_con": 0.0, "whatsapp": 0.0, "correos": 0.0, "linkedin": 0.0, "act_total": 0.0, "pts_act": 0.0, "pts_val": 0.0, "pipe_obj": 5160.0, "pipe_gen": 0.0, "pipe_gen_pct": 0.0, "pipe_out_act": 0.0, "pipe_in_act": 0.0, "sqo": 0.0, "cierre_obj": 412.8, "cierre_out": 0.0, "cierre_in": 0.0, "cierre_pct": 0.0, "comisiones": 0.0, "bono_out": 0.0, "bono_in": 0.0, "total_extra": 0.0, "total_demos": 0.0, "noshow": 0.0, "won": 0.0, "demo_wa": 0.0, "demo_ll": 0.0, "demo_li": 0.0, "demo_co": 0.0, "demo_lumo": 0.0, "lunes": 0.0, "martes": 0.0, "mierc": 0.0, "jueves": 0.0, "viernes": 0.0, "arg": 0.0, "par": 0.0, "uru": 0.0, "otro": 0.0, "sqo_demo": 0.0, "prode": 0.0, "smb": 0.0, "growth": 0.0, "outbound_demo": 0.0, "lumo_in": 0.0, "industries": {"Agriculture": 0, "Airlines & Transportation & Logistics": 0, "Automotive": 0, "Chemicals / Químicas": 0, "Construction": 0, "Consulting Services": 0, "Consumer goods": 0, "Education": 0, "Financial services": 0, "Funeral Homes": 0, "Healthcare": 0, "Hospitality & Tourism": 0, "Insurance": 0, "Manufacturing": 0, "Media & Entertainment": 0, "Mining": 0, "Oil & Energy": 0, "Other": 0, "Pharmaceuticals": 0, "Real State": 0, "Retail": 0, "Software Companies & IT services": 0, "Telecomunications": 0}}, "Diciembre": {"dias": 0.0, "deals": 0.0, "llamadas": 0.0, "llamadas_con": 0.0, "whatsapp": 0.0, "correos": 0.0, "linkedin": 0.0, "act_total": 0.0, "pts_act": 0.0, "pts_val": 0.0, "pipe_obj": 5160.0, "pipe_gen": 0.0, "pipe_gen_pct": 0.0, "pipe_out_act": 0.0, "pipe_in_act": 0.0, "sqo": 0.0, "cierre_obj": 412.8, "cierre_out": 0.0, "cierre_in": 0.0, "cierre_pct": 0.0, "comisiones": 0.0, "bono_out": 0.0, "bono_in": 0.0, "total_extra": 0.0, "total_demos": 0.0, "noshow": 0.0, "won": 0.0, "demo_wa": 0.0, "demo_ll": 0.0, "demo_li": 0.0, "demo_co": 0.0, "demo_lumo": 0.0, "lunes": 0.0, "martes": 0.0, "mierc": 0.0, "jueves": 0.0, "viernes": 0.0, "arg": 0.0, "par": 0.0, "uru": 0.0, "otro": 0.0, "sqo_demo": 0.0, "prode": 0.0, "smb": 0.0, "growth": 0.0, "outbound_demo": 0.0, "lumo_in": 0.0, "industries": {"Agriculture": 0, "Airlines & Transportation & Logistics": 0, "Automotive": 0, "Chemicals / Químicas": 0, "Construction": 0, "Consulting Services": 0, "Consumer goods": 0, "Education": 0, "Financial services": 0, "Funeral Homes": 0, "Healthcare": 0, "Hospitality & Tourism": 0, "Insurance": 0, "Manufacturing": 0, "Media & Entertainment": 0, "Mining": 0, "Oil & Energy": 0, "Other": 0, "Pharmaceuticals": 0, "Real State": 0, "Retail": 0, "Software Companies & IT services": 0, "Telecomunications": 0}}}, "quarters": {"Q1": {"dias": 15.0, "deals": 138.0, "llamadas": 525.0, "llamadas_con": 76.0, "whatsapp": 225.0, "correos": 318.0, "linkedin": 75.0, "act_total": 1143.0, "act_prom_dia": 76.2, "call_rate": 0.144762, "pts_obj": 6.0, "pts_act": 4.55, "pts_act_pct": 0.758333, "pipe_obj": 1548.0, "pipe_gen": 1028.0, "pipe_gen_pct": 0.664083, "pipe_out_act": 288.0, "pipe_in_act": 140.0, "sqo": 5.0, "pipe_sqo_prom": 205.6, "cierre_obj": 123.84, "cierre_out": 0.0, "cierre_in": 0.0, "cierre_pct": 0.0, "comisiones": 0.0, "bono_out": 0.0, "bono_in": 0.0, "total_extra": 0.0, "total_demos": 6.0, "noshow": 2.0, "noshow_pct": 0.333333, "won": 0.0, "won_pct": 0.0, "demo_wa": 3.0, "demo_wa_pct": 0.5, "demo_ll": 2.0, "demo_ll_pct": 0.333333, "demo_li": 0.0, "demo_li_pct": 0.0, "demo_co": 0.0, "demo_co_pct": 0.0, "demo_lumo": 1.0, "demo_lumo_pct": 0.166667, "tc_deals": 0.043478, "tc_act": 0.005249, "tc_ll": 0.00381, "tc_llc": 0.026316, "tc_wa": 0.013333, "tc_li": 0.0, "tc_co": 0.0, "lunes": 1.0, "lunes_pct": 0.166667, "martes": 1.0, "martes_pct": 0.166667, "mierc": 1.0, "mierc_pct": 0.166667, "jueves": 0.0, "jueves_pct": 0.0, "viernes": 3.0, "viernes_pct": 0.5, "arg": 5.0, "arg_pct": 0.833333, "par": 0.0, "par_pct": 0.0, "uru": 1.0, "uru_pct": 0.166667, "otro": 0.0, "otro_pct": 0.0, "sqo_demo": 6.0, "sqo_demo_pct": 1.0, "prode": 0.0, "prode_pct": 0.0, "smb": 5.0, "smb_pct": 0.833333, "growth": 1.0, "growth_pct": 0.166667, "outbound_demo": 5.0, "outbound_demo_pct": 0.833333, "lumo_in": 1.0, "lumo_in_pct": 0.166667, "industries": {"Agriculture": 0, "Airlines & Transportation & Logistics": 0, "Automotive": 1, "Chemicals / Químicas": 0, "Construction": 0, "Consulting Services": 1, "Consumer goods": 0, "Education": 0, "Financial services": 0, "Funeral Homes": 0, "Healthcare": 1, "Hospitality & Tourism": 0, "Insurance": 0, "Manufacturing": 1, "Media & Entertainment": 0, "Mining": 0, "Oil & Energy": 1, "Other": 0, "Pharmaceuticals": 0, "Real State": 0, "Retail": 0, "Software Companies & IT services": 0, "Telecomunications": 1}}, "Q2": {"dias": 33.0, "deals": 447.0, "llamadas": 1107.0, "llamadas_con": 204.0, "whatsapp": 464.0, "correos": 1165.0, "linkedin": 214.0, "act_total": 2950.0, "act_prom_dia": 89.393939, "call_rate": 0.184282, "pts_obj": 50.0, "pts_act": 36.35, "pts_act_pct": 0.727, "pipe_obj": 13416.0, "pipe_gen": 6558.0, "pipe_gen_pct": 0.488819, "pipe_out_act": 4813.0, "pipe_in_act": 250.0, "sqo": 26.0, "pipe_sqo_prom": 252.230769, "cierre_obj": 1073.28, "cierre_out": 340.0, "cierre_in": 0.0, "cierre_pct": 0.316786, "comisiones": 250.0, "bono_out": 51.0, "bono_in": 0.0, "total_extra": 301.0, "total_demos": 34.0, "noshow": 4.0, "noshow_pct": 0.117647, "won": 2.0, "won_pct": 0.058824, "demo_wa": 17.0, "demo_wa_pct": 0.5, "demo_ll": 9.0, "demo_ll_pct": 0.264706, "demo_li": 3.0, "demo_li_pct": 0.088235, "demo_co": 4.0, "demo_co_pct": 0.117647, "demo_lumo": 1.0, "demo_lumo_pct": 0.029412, "tc_deals": 0.076063, "tc_act": 0.011525, "tc_ll": 0.00813, "tc_llc": 0.044118, "tc_wa": 0.036638, "tc_li": 0.014019, "tc_co": 0.003433, "lunes": 8.0, "lunes_pct": 0.235294, "martes": 10.0, "martes_pct": 0.294118, "mierc": 5.0, "mierc_pct": 0.147059, "jueves": 4.0, "jueves_pct": 0.117647, "viernes": 7.0, "viernes_pct": 0.205882, "arg": 23.0, "arg_pct": 0.676471, "par": 6.0, "par_pct": 0.176471, "uru": 2.0, "uru_pct": 0.058824, "otro": 3.0, "otro_pct": 0.088235, "sqo_demo": 29.0, "sqo_demo_pct": 0.852941, "prode": 5.0, "prode_pct": 0.147059, "smb": 29.0, "smb_pct": 0.852941, "growth": 5.0, "growth_pct": 0.147059, "outbound_demo": 31.0, "outbound_demo_pct": 0.911765, "lumo_in": 3.0, "lumo_in_pct": 0.088235, "industries": {"Agriculture": 3, "Airlines & Transportation & Logistics": 4, "Automotive": 0, "Chemicals / Químicas": 1, "Construction": 4, "Consulting Services": 0, "Consumer goods": 1, "Education": 0, "Financial services": 0, "Funeral Homes": 1, "Healthcare": 4, "Hospitality & Tourism": 0, "Insurance": 1, "Manufacturing": 10, "Media & Entertainment": 1, "Mining": 0, "Oil & Energy": 1, "Other": 0, "Pharmaceuticals": 1, "Real State": 0, "Retail": 1, "Software Companies & IT services": 1, "Telecomunications": 0}}, "Q3": {"dias": 0.0, "deals": 0.0, "llamadas": 0.0, "llamadas_con": 0.0, "whatsapp": 0.0, "correos": 0.0, "linkedin": 0.0, "act_total": 0.0, "pts_obj": 0.0, "pts_act": 0.0, "pipe_obj": 15480.0, "pipe_gen": 0.0, "pipe_gen_pct": 0.0, "pipe_out_act": 0.0, "pipe_in_act": 0.0, "sqo": 0.0, "cierre_obj": 1238.4, "cierre_out": 0.0, "cierre_in": 0.0, "cierre_pct": 0.0, "comisiones": 0.0, "bono_out": 0.0, "bono_in": 0.0, "total_extra": 0.0, "total_demos": 0.0, "noshow": 0.0, "won": 0.0, "demo_wa": 0.0, "demo_ll": 0.0, "demo_li": 0.0, "demo_co": 0.0, "demo_lumo": 0.0, "lunes": 0.0, "martes": 0.0, "mierc": 0.0, "jueves": 0.0, "viernes": 0.0, "arg": 0.0, "par": 0.0, "uru": 0.0, "otro": 0.0, "sqo_demo": 0.0, "prode": 0.0, "smb": 0.0, "growth": 0.0, "outbound_demo": 0.0, "lumo_in": 0.0, "industries": {"Agriculture": 0, "Airlines & Transportation & Logistics": 0, "Automotive": 0, "Chemicals / Químicas": 0, "Construction": 0, "Consulting Services": 0, "Consumer goods": 0, "Education": 0, "Financial services": 0, "Funeral Homes": 0, "Healthcare": 0, "Hospitality & Tourism": 0, "Insurance": 0, "Manufacturing": 0, "Media & Entertainment": 0, "Mining": 0, "Oil & Energy": 0, "Other": 0, "Pharmaceuticals": 0, "Real State": 0, "Retail": 0, "Software Companies & IT services": 0, "Telecomunications": 0}}, "Q4": {"dias": 0.0, "deals": 0.0, "llamadas": 0.0, "llamadas_con": 0.0, "whatsapp": 0.0, "correos": 0.0, "linkedin": 0.0, "act_total": 0.0, "pts_obj": 0.0, "pts_act": 0.0, "pipe_obj": 15480.0, "pipe_gen": 0.0, "pipe_gen_pct": 0.0, "pipe_out_act": 0.0, "pipe_in_act": 0.0, "sqo": 0.0, "cierre_obj": 1238.4, "cierre_out": 0.0, "cierre_in": 0.0, "cierre_pct": 0.0, "comisiones": 0.0, "bono_out": 0.0, "bono_in": 0.0, "total_extra": 0.0, "total_demos": 0.0, "noshow": 0.0, "won": 0.0, "demo_wa": 0.0, "demo_ll": 0.0, "demo_li": 0.0, "demo_co": 0.0, "demo_lumo": 0.0, "lunes": 0.0, "martes": 0.0, "mierc": 0.0, "jueves": 0.0, "viernes": 0.0, "arg": 0.0, "par": 0.0, "uru": 0.0, "otro": 0.0, "sqo_demo": 0.0, "prode": 0.0, "smb": 0.0, "growth": 0.0, "outbound_demo": 0.0, "lumo_in": 0.0, "industries": {"Agriculture": 0, "Airlines & Transportation & Logistics": 0, "Automotive": 0, "Chemicals / Químicas": 0, "Construction": 0, "Consulting Services": 0, "Consumer goods": 0, "Education": 0, "Financial services": 0, "Funeral Homes": 0, "Healthcare": 0, "Hospitality & Tourism": 0, "Insurance": 0, "Manufacturing": 0, "Media & Entertainment": 0, "Mining": 0, "Oil & Energy": 0, "Other": 0, "Pharmaceuticals": 0, "Real State": 0, "Retail": 0, "Software Companies & IT services": 0, "Telecomunications": 0}}}, "won": {"avg_days_demo_to_won": 30.5, "avg_days_won_to_mrr": 14.0, "arr": 9480.0, "won_pct_acum": {"Abril": 0.043478, "Mayo": 0.025}}, "won_deals": [{"company": "Fundación Pérez Scremini", "mes": "Marzo", "canal": "Llamada", "pais": "Uruguay", "industry": "Healthcare", "pipeline": 340.0, "type": "Growth", "days_won": 54.0, "days_mrr": 14.0, "arr": 4080.0}, {"company": "Filgo Argentina", "mes": "Abril", "canal": "Correo", "pais": "Argentina", "industry": "Consumer goods", "pipeline": 450.0, "type": "SMB", "days_won": 7.0, "days_mrr": null, "arr": 5400.0}]};
+
+// ── helpers ──────────────────────────────────────────────
+const gd=()=>currentMode==='quarter'?(DATA.quarters[currentKey]||{}):(DATA.months[currentKey]||{});
+const g=k=>gd()[k];
+const gm=(m,k)=>(DATA.months[m]||{})[k];
+const gq=(q,k)=>(DATA.quarters[q]||{})[k];
+const pct=v=>(v*100).toFixed(1)+'%';
+const cur=v=>'$'+Math.round(v).toLocaleString('es-AR');
+const dec=v=>parseFloat(v).toFixed(1);
+const dec2=v=>parseFloat(v).toFixed(2);
+const num=v=>Math.round(v).toLocaleString('es-AR');
+function setKPI(id,val,fmt,pctVal,pctId){
+  const el=document.getElementById(id);if(!el)return;
+  if(val===undefined||val===null){el.innerHTML='<span class="kpi-empty">—</span>';if(pctId){const p=document.getElementById(pctId);if(p)p.textContent='';}return;}
+  const fns={pct,cur,dec,dec2,num};
+  el.innerHTML=(fns[fmt]||num)(val)+(pctVal!=null?`<span class="kpi-pct">${pct(pctVal)}</span>`:'');
+}
+function setSub(id,val,fmt){const el=document.getElementById(id);if(el)el.textContent=val!=null?(fmt==='pct'?pct(val):val):''}
+
+// ── chart helpers ─────────────────────────────────────────
+const C={a:'#0ea472',b:'#e0456e',c:'#5b5fe8',d:'#e08c0a',border:'#e2e5eb',text2:'#4b5563',text3:'#9ca3af',bg:'#f0f1f4'};
+const baseOpts={responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{display:false},tooltip:{backgroundColor:'#fff',borderColor:'#e2e5eb',borderWidth:1,titleColor:'#111827',bodyColor:'#4b5563',titleFont:{family:'JetBrains Mono',size:11},bodyFont:{family:'JetBrains Mono',size:11},padding:10,cornerRadius:6}},
+  scales:{x:{grid:{color:'#f0f1f4'},ticks:{color:'#9ca3af',font:{family:'JetBrains Mono',size:10}}},y:{grid:{color:'#f0f1f4'},ticks:{color:'#9ca3af',font:{family:'JetBrains Mono',size:10}}}}};
+function mk(id,cfg){if(charts[id]){charts[id].destroy();delete charts[id];}const c=document.getElementById(id);if(c)charts[id]=new Chart(c,cfg);}
+
+// ── navigation ────────────────────────────────────────────
+function showPage(p){
+  currentPage=p;
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(x=>x.classList.remove('active'));
+  const map={actividad:0,demos:1,okrs:2,won:3};
+  document.querySelectorAll('.nav-item')[map[p]].classList.add('active');
+  renderAll();
+}
+function selectMonth(m){
+  currentMode='month'; currentKey=m;
+  document.querySelectorAll('.m-btn').forEach(b=>b.classList.remove('active'));
+  const mb=document.getElementById('mb-'+m); if(mb)mb.classList.add('active');
+  document.querySelectorAll('.q-btn').forEach(b=>b.classList.remove('active'));
+  updateTitles(); renderAll();
+}
+function selectQ(q){
+  currentMode='quarter'; currentKey=q;
+  document.querySelectorAll('.q-btn').forEach(b=>b.classList.remove('active'));
+  const qb=document.getElementById('qb-'+q); if(qb)qb.classList.add('active');
+  document.querySelectorAll('.m-btn').forEach(b=>b.classList.remove('active'));
+  updateTitles(); renderAll();
+}
+function buildGrids(){
+  const mg=document.getElementById('monthGrid'); mg.innerHTML='';
+  MONTHS.forEach(m=>{
+    const d=DATA.months[m]||{},has=Object.keys(d).filter(k=>k!=='industries').length>0;
+    const b=document.createElement('div');
+    b.className='m-btn'+(m===currentKey&&currentMode==='month'?' active':'')+(has?' has-data':'');
+    b.id='mb-'+m; b.textContent=MONTHS_SHORT[MONTHS.indexOf(m)]; b.onclick=()=>selectMonth(m);
+    mg.appendChild(b);
+  });
+  const qg=document.getElementById('qGrid'); qg.innerHTML='';
+  QUARTERS.forEach(q=>{
+    const d=DATA.quarters[q]||{},has=Object.keys(d).filter(k=>k!=='industries').length>0;
+    const b=document.createElement('div');
+    b.className='q-btn'+(q===currentKey&&currentMode==='quarter'?' active':'')+(has?' has-data':'');
+    b.id='qb-'+q; b.textContent=q; b.onclick=()=>selectQ(q);
+    qg.appendChild(b);
+  });
+}
+function updateTitles(){
+  ['actividad','demos','okrs'].forEach(p=>{
+    const el=document.getElementById('title-'+p);
+    if(el)el.innerHTML=currentKey+' <span>2026</span>';
+  });
+}
+
+// ── import excel ──────────────────────────────────────────
+function importExcel(e){
+  const file=e.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=function(ev){
+    try{
+      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array'});
+      // Dashboard sheet → months
+      const ws=wb.Sheets['Dashboard']||wb.Sheets['Dashboard 2026'];
+      if(ws){
+        const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null});
+        const hdr=rows[1]||[];let base=2;
+        for(let i=0;i<hdr.length;i++){if(hdr[i]==='Enero'){base=i;break;}}
+        for(let m=0;m<12;m++){
+          const col=base+m,md={};
+          for(const[ri,k]of Object.entries(ROW_MAP)){
+            const row=rows[parseInt(ri)];if(!row)continue;
+            const v=row[col];if(v!==null&&typeof v==='number')md[k]=v;
+          }
+          const inds={};
+          for(let i=0;i<INDUSTRIES.length;i++){const row=rows[93+i];if(!row)continue;const v=row[col];if(v!==null&&typeof v==='number')inds[INDUSTRIES[i]]=v;}
+          md.industries=inds; DATA.months[MONTHS[m]]=md;
+        }
+      }
+      // Vista por Q → quarters
+      const wsQ=wb.Sheets['Vista por Q'];
+      if(wsQ){
+        const qrows=XLSX.utils.sheet_to_json(wsQ,{header:1,defval:null});
+        const ROW_MAP_Q={3:'dias',4:'deals',5:'llamadas',6:'llamadas_con',7:'whatsapp',8:'correos',9:'linkedin',10:'act_total',11:'act_prom_dia',14:'call_rate',16:'pts_obj',17:'pts_act',18:'pts_act_pct',21:'pipe_obj',22:'pipe_gen',23:'pipe_gen_pct',24:'pipe_out_act',25:'pipe_in_act',26:'sqo',27:'pipe_sqo_prom',28:'cierre_obj',29:'cierre_out',30:'cierre_in',31:'cierre_pct',32:'comisiones',33:'bono_out',34:'bono_in',35:'total_extra',37:'total_demos',41:'noshow',42:'noshow_pct',45:'won',46:'won_pct',47:'demo_wa',48:'demo_wa_pct',49:'demo_ll',50:'demo_ll_pct',51:'demo_li',52:'demo_li_pct',53:'demo_co',54:'demo_co_pct',55:'demo_lumo',56:'demo_lumo_pct',57:'tc_deals',58:'tc_act',59:'tc_ll',60:'tc_llc',61:'tc_wa',62:'tc_li',63:'tc_co',64:'lunes',65:'lunes_pct',66:'martes',67:'martes_pct',68:'mierc',69:'mierc_pct',70:'jueves',71:'jueves_pct',72:'viernes',73:'viernes_pct',74:'arg',75:'arg_pct',76:'par',77:'par_pct',78:'uru',79:'uru_pct',80:'otro',81:'otro_pct',82:'sqo_demo',83:'sqo_demo_pct',84:'prode',85:'prode_pct',86:'smb',87:'smb_pct',88:'growth',89:'growth_pct',90:'outbound_demo',91:'outbound_demo_pct',92:'lumo_in',93:'lumo_in_pct'};
+        for(let qi=0;qi<4;qi++){
+          const col=2+qi,qd={};
+          for(const[ri,k]of Object.entries(ROW_MAP_Q)){
+            const row=qrows[parseInt(ri)];if(!row)continue;
+            const v=row[col];if(v!==null&&typeof v==='number')qd[k]=v;
+          }
+          const inds={};
+          for(let i=0;i<INDUSTRIES.length;i++){const row=qrows[94+i];if(!row)continue;const v=row[col];if(v!==null&&typeof v==='number')inds[INDUSTRIES[i]]=v;}
+          qd.industries=inds; DATA.quarters[QUARTERS[qi]]=qd;
+        }
+      }
+      // Won sheet
+      const wsWon=wb.Sheets['Won'];
+      if(wsWon){
+        const wr=XLSX.utils.sheet_to_json(wsWon,{header:1,defval:null});
+        const skip=['Won','Cierre MRR','Total de demos','Tiempo promedio','Life Time Value','ARR Won','% Won'];
+        DATA.won_deals=[];
+        for(let i=1;i<wr.length;i++){
+          const row=wr[i];if(!row||!row[0]||typeof row[0]!=='string')continue;
+          if(skip.some(s=>row[0].trim().startsWith(s)))continue;
+          DATA.won_deals.push({company:row[0],mes:row[10],canal:row[14],pais:row[15],industry:row[16],pipeline:typeof row[17]==='number'?row[17]:null,type:row[18],days_won:typeof row[27]==='number'?row[27]:null,days_mrr:typeof row[30]==='number'?row[30]:null,arr:typeof row[32]==='number'?row[32]:null});
+        }
+        const pctRow=wr.find(r=>r&&typeof r[0]==='string'&&r[0].includes('% Won'));
+        if(pctRow){const won_pct_acum={};let base=1;for(let i=0;i<wr.length;i++){const r=wr[i]||[];const ei=r.indexOf('Enero');if(ei>=0){base=ei;break;}}for(let m=0;m<12;m++){const v=pctRow[base+m];if(v&&typeof v==='number'&&v>0)won_pct_acum[MONTHS[m]]=v;}DATA.won.won_pct_acum=won_pct_acum;}
+        const dw=DATA.won_deals.map(d=>d.days_won).filter(v=>v),dm=DATA.won_deals.map(d=>d.days_mrr).filter(v=>v);
+        DATA.won.avg_days_demo_to_won=dw.length?+(dw.reduce((a,b)=>a+b,0)/dw.length).toFixed(1):null;
+        DATA.won.avg_days_won_to_mrr=dm.length?+(dm.reduce((a,b)=>a+b,0)/dm.length).toFixed(1):null;
+        DATA.won.arr=DATA.won_deals.reduce((s,d)=>s+(d.arr||0),0)||null;
+      }
+      renderAll(); showToast('✓ Excel importado'); e.target.value='';
+    }catch(err){showToast('❌ Error: '+err.message);}
+  };
+  r.readAsArrayBuffer(file);
+}
+
+function clearData(){
+  MONTHS.forEach(m=>DATA.months[m]={industries:{}});
+  QUARTERS.forEach(q=>DATA.quarters[q]={industries:{}});
+  DATA.won={avg_days_demo_to_won:null,avg_days_won_to_mrr:null,arr:null,won_pct_acum:{}};
+  DATA.won_deals=[];
+  currentMode='month'; currentKey='Mayo';
+  renderAll(); showToast('✓ Datos eliminados');
+}
+
+function downloadHTML(){
+  const ds=`<script>DATA=${JSON.stringify(DATA)};currentKey='${currentKey}';currentMode='${currentMode}';<\/script>`;
+  const html=document.documentElement.outerHTML.replace('</body>',ds+'</body>');
+  const blob=new Blob([html],{type:'text/html'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Dashboard_BDR_2026.html';a.click();
+  showToast('✓ HTML descargado');
+}
+
+// ── render all ────────────────────────────────────────────
+function renderAll(){
+  buildGrids(); updateTitles();
+  if(currentPage==='actividad')renderActividad();
+  if(currentPage==='demos')renderDemos();
+  if(currentPage==='okrs')renderOKRs();
+  if(currentPage==='won')renderWon();
+}
+
+// ── ACTIVIDAD ─────────────────────────────────────────────
+function renderActividad(){
+  setKPI('k-act-total',g('act_total'));
+  setKPI('k-deals',g('deals'));
+  setKPI('k-dias',g('dias'));
+  setKPI('k-llamadas',g('llamadas'));
+  setKPI('k-llamadas-con',g('llamadas_con'));
+  setKPI('k-wa',g('whatsapp'));
+  setKPI('k-correos',g('correos'));
+  setKPI('k-linkedin',g('linkedin'));
+  setKPI('k-act-prom',g('act_prom_dia'),'dec');
+  setKPI('k-deals-prom',g('deals_prom_dia'),'dec');
+  setKPI('k-act-deal',g('act_prom_deal'),'dec');
+  setKPI('k-call-rate',g('call_rate'),'pct');
+
+  // charts use months for evolution, quarters for Q view
+  const isQ=currentMode==='quarter';
+  const labels=isQ?QUARTERS:MONTHS_SHORT;
+  const actData=isQ?QUARTERS.map(q=>gq(q,'act_total')||null):MONTHS.map(m=>gm(m,'act_total')||null);
+  const dealsData=isQ?QUARTERS.map(q=>gq(q,'deals')||null):MONTHS.map(m=>gm(m,'deals')||null);
+  mk('chart-evolucion',{type:'line',data:{labels,datasets:[
+    {label:'Actividad',data:actData,borderColor:C.a,backgroundColor:'rgba(14,164,114,.08)',tension:.3,pointRadius:4,pointBackgroundColor:C.a,spanGaps:false},
+    {label:'Deals',data:dealsData,borderColor:C.b,backgroundColor:'rgba(224,69,110,.06)',tension:.3,pointRadius:4,pointBackgroundColor:C.b,spanGaps:false}
+  ]},options:{...baseOpts,plugins:{...baseOpts.plugins,legend:{display:false}}}});
+
+  const d=gd();
+  const cv=[d.llamadas||0,d.whatsapp||0,d.correos||0,d.linkedin||0],hc=cv.some(v=>v>0);
+  mk('chart-canales',{type:'doughnut',data:{labels:['Llamadas','WhatsApp','Correos','LinkedIn'],datasets:[{data:hc?cv:[1,1,1,1],backgroundColor:[C.a,C.b,C.c,C.d],borderColor:'#f0f1f4',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'right',labels:{color:C.text2,font:{family:'JetBrains Mono',size:11},padding:12,boxWidth:10}},tooltip:baseOpts.plugins.tooltip}}});
+
+  const crData=isQ?QUARTERS.map(q=>{const v=gq(q,'call_rate');return v!=null?+(v*100).toFixed(1):null}):MONTHS.map(m=>{const v=gm(m,'call_rate');return v!=null?+(v*100).toFixed(1):null});
+  mk('chart-call-rate',{type:'bar',data:{labels,datasets:[{label:'Call answer rate %',data:crData,backgroundColor:crData.map(v=>v?'rgba(14,164,114,.25)':'rgba(226,229,235,.5)'),borderColor:crData.map(v=>v?C.a:'transparent'),borderWidth:1,borderRadius:4}]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,ticks:{...baseOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
+}
+
+// ── DEMOS ─────────────────────────────────────────────────
+function renderDemos(){
+  const d=gd();
+  setKPI('k-total-demos',g('total_demos'));
+  setKPI('k-won',g('won'));setSub('k-won-pct',g('won_pct'),'pct');
+  setKPI('k-noshow',g('noshow'));setSub('k-noshow-pct',g('noshow_pct'),'pct');
+  setKPI('k-pts-demo',g('pts_demo'),'dec2');
+  setKPI('k-pts-dm',g('pts_dm'),'dec2');
+  setKPI('k-pts-size',g('pts_size'),'dec2');
+  setKPI('k-dias-sched',g('dias_sched'),'dec');
+  setKPI('k-dias-demo',g('dias_demo'),'dec');
+
+  const cdv=[d.demo_wa||0,d.demo_ll||0,d.demo_li||0,d.demo_co||0,d.demo_lumo||0],hcd=cdv.some(v=>v>0);
+  mk('chart-canal-pie',{type:'doughnut',data:{labels:['WhatsApp','Llamada','LinkedIn','Correo','Correo Lumo'],datasets:[{data:hcd?cdv:[1,1,1,1,1],backgroundColor:['rgba(14,164,114,.7)','rgba(224,69,110,.7)','rgba(91,95,232,.7)','rgba(224,140,10,.7)','rgba(59,130,246,.7)'],borderColor:'#f0f1f4',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{color:C.text2,font:{family:'JetBrains Mono',size:10},padding:8,boxWidth:10}},tooltip:baseOpts.plugins.tooltip}}});
+
+  const tl=['Deals','Actividad','Llamadas','Ll.Con.','WhatsApp','LinkedIn','Correo'];
+  const tv=[d.tc_deals,d.tc_act,d.tc_ll,d.tc_llc,d.tc_wa,d.tc_li,d.tc_co].map(v=>v!=null?+(v*100).toFixed(2):null);
+  mk('chart-tasa-canal',{type:'bar',data:{labels:tl,datasets:[{label:'Tasa %',data:tv,backgroundColor:'rgba(91,95,232,.2)',borderColor:C.c,borderWidth:1,borderRadius:4}]},options:{...baseOpts,indexAxis:'y',scales:{x:{...baseOpts.scales.x,ticks:{...baseOpts.scales.x.ticks,callback:v=>v+'%'}},y:{...baseOpts.scales.y}}}});
+
+  mk('chart-dias-semana',{type:'bar',data:{labels:['Lun','Mar','Mié','Jue','Vie'],datasets:[{data:[d.lunes||0,d.martes||0,d.mierc||0,d.jueves||0,d.viernes||0],backgroundColor:'rgba(224,140,10,.2)',borderColor:C.d,borderWidth:1,borderRadius:6}]},options:{...baseOpts}});
+
+  const pv=[d.arg||0,d.par||0,d.uru||0,d.otro||0],hp=pv.some(v=>v>0);
+  mk('chart-paises',{type:'pie',data:{labels:['Argentina','Paraguay','Uruguay','Otro'],datasets:[{data:hp?pv:[1,1,1,1],backgroundColor:['rgba(14,164,114,.7)','rgba(224,69,110,.7)','rgba(91,95,232,.7)','rgba(224,140,10,.7)'],borderColor:'#f0f1f4',borderWidth:2}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,position:'bottom',labels:{color:C.text2,font:{family:'JetBrains Mono',size:10},padding:6,boxWidth:8}},tooltip:baseOpts.plugins.tooltip}}});
+
+  mk('chart-sqo-prode',{type:'bar',data:{labels:['SQO','Prode'],datasets:[{data:[d.sqo_demo||0,d.prode||0],backgroundColor:['rgba(14,164,114,.2)','rgba(224,69,110,.2)'],borderColor:[C.a,C.b],borderWidth:1,borderRadius:6}]},options:{...baseOpts}});
+  mk('chart-smb-growth',{type:'bar',data:{labels:['SMB','Growth'],datasets:[{data:[d.smb||0,d.growth||0],backgroundColor:['rgba(91,95,232,.2)','rgba(224,140,10,.2)'],borderColor:[C.c,C.d],borderWidth:1,borderRadius:6}]},options:{...baseOpts}});
+  mk('chart-source',{type:'bar',data:{labels:['Outbound','Lumo Inbound'],datasets:[{data:[d.outbound_demo||0,d.lumo_in||0],backgroundColor:['rgba(14,164,114,.2)','rgba(91,95,232,.2)'],borderColor:[C.a,C.c],borderWidth:1,borderRadius:6}]},options:{...baseOpts}});
+
+  const inds=d.industries||{},sorted=Object.entries(inds).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  const total=sorted.reduce((s,[,v])=>s+v,0),maxV=sorted[0]?.[1]||1;
+  const wrap=document.getElementById('industry-table-wrap');
+  if(!sorted.length){wrap.innerHTML='<div class="no-data-state">Sin datos de industria</div>';return;}
+  wrap.innerHTML=`<table class="data-table"><thead><tr><th style="width:45%">Industria</th><th class="td-num" style="width:15%">Demos</th><th class="td-num" style="width:15%">%</th><th class="td-bar" style="width:25%">Distribución</th></tr></thead><tbody>${sorted.map(([ind,v])=>`<tr><td>${ind}</td><td class="td-num">${v}</td><td class="td-num">${total?((v/total)*100).toFixed(1)+'%':'—'}</td><td class="td-bar"><div class="mini-bar"><div class="mini-bar-fill" style="width:${(v/maxV*100).toFixed(0)}%;background:var(--accent)"></div></div></td></tr>`).join('')}</tbody></table>`;
+}
+
+// ── OKRs ──────────────────────────────────────────────────
+function renderOKRs(){
+  setKPI('k-pts-obj',g('pts_obj'));
+  setKPI('k-pts-act',g('pts_act'),'dec2');setSub('k-pts-act-pct',g('pts_act_pct'),'pct');
+  setKPI('k-pts-val',g('pts_val'),'dec2');setSub('k-pts-val-pct',g('pts_val_pct'),'pct');
+  setKPI('k-pipe-obj',g('pipe_obj'),'cur');
+  setKPI('k-pipe-gen',g('pipe_gen'),'cur');setSub('k-pipe-gen-pct',g('pipe_gen_pct'),'pct');
+  setKPI('k-pipe-sqo',g('pipe_sqo_prom'),'cur');
+  setKPI('k-pipe-out-act',g('pipe_out_act'),'cur');
+  setKPI('k-pipe-in-act',g('pipe_in_act'),'cur');
+  setKPI('k-sqo',g('sqo'));
+  setKPI('k-cierre-obj',g('cierre_obj'),'cur');
+  setKPI('k-cierre-out',g('cierre_out'),'cur');setSub('k-cierre-pct',g('cierre_pct'),'pct');
+  setKPI('k-cierre-in',g('cierre_in'),'cur');
+  setKPI('k-total-extra',g('total_extra'),'cur');
+
+  const isQ=currentMode==='quarter';
+  const labels=isQ?QUARTERS:MONTHS_SHORT;
+  const pg=isQ?QUARTERS.map(q=>gq(q,'pipe_gen')||null):MONTHS.map(m=>gm(m,'pipe_gen')||null);
+  const po=isQ?QUARTERS.map(q=>gq(q,'pipe_obj')||null):MONTHS.map(m=>gm(m,'pipe_obj')||null);
+  mk('chart-pipeline',{type:'bar',data:{labels,datasets:[{label:'Generado',data:pg,backgroundColor:'rgba(14,164,114,.2)',borderColor:C.a,borderWidth:1,borderRadius:4},{label:'Objetivo',data:po,type:'line',borderColor:C.b,borderDash:[4,3],pointRadius:0,tension:0,borderWidth:1.5,fill:false}]},options:{...baseOpts,plugins:{...baseOpts.plugins,legend:{display:true,labels:{color:C.text2,font:{family:'JetBrains Mono',size:10},boxWidth:10}}}}});
+
+  const pa=isQ?QUARTERS.map(q=>gq(q,'pts_act')||null):MONTHS.map(m=>gm(m,'pts_act')||null);
+  const pob=isQ?QUARTERS.map(q=>gq(q,'pts_obj')||null):MONTHS.map(m=>gm(m,'pts_obj')||null);
+  mk('chart-puntos',{type:'bar',data:{labels,datasets:[{label:'Actuales',data:pa,backgroundColor:'rgba(91,95,232,.2)',borderColor:C.c,borderWidth:1,borderRadius:4},{label:'Objetivo',data:pob,type:'line',borderColor:C.d,borderDash:[4,3],pointRadius:0,tension:0,borderWidth:1.5,fill:false}]},options:{...baseOpts,plugins:{...baseOpts.plugins,legend:{display:true,labels:{color:C.text2,font:{family:'JetBrains Mono',size:10},boxWidth:10}}}}});
+
+  const oa=isQ?QUARTERS.map(q=>gq(q,'pipe_out_act')||null):MONTHS.map(m=>gm(m,'pipe_out_act')||null);
+  const ia=isQ?QUARTERS.map(q=>gq(q,'pipe_in_act')||null):MONTHS.map(m=>gm(m,'pipe_in_act')||null);
+  mk('chart-pipe-mix',{type:'bar',data:{labels,datasets:[{label:'Outbound activo',data:oa,backgroundColor:'rgba(14,164,114,.2)',borderColor:C.a,borderWidth:1,borderRadius:4},{label:'Inbound activo',data:ia,backgroundColor:'rgba(224,69,110,.2)',borderColor:C.b,borderWidth:1,borderRadius:4}]},options:{...baseOpts,scales:{...baseOpts.scales,x:{...baseOpts.scales.x,stacked:true},y:{...baseOpts.scales.y,stacked:true}},plugins:{...baseOpts.plugins,legend:{display:true,labels:{color:C.text2,font:{family:'JetBrains Mono',size:10},boxWidth:10}}}}});
+}
+
+// ── WON ───────────────────────────────────────────────────
+function renderWon(){
+  const won=DATA.won||{},wonDeals=DATA.won_deals||[];
+  const arr=won.arr;
+  document.getElementById('w-arr').innerHTML=arr?'$'+Math.round(arr).toLocaleString('es-AR'):'<span class="kpi-empty">—</span>';
+  document.getElementById('w-total').innerHTML=wonDeals.length?wonDeals.length:'<span class="kpi-empty">—</span>';
+  document.getElementById('w-days-won').innerHTML=won.avg_days_demo_to_won?won.avg_days_demo_to_won+'d':'<span class="kpi-empty">—</span>';
+  document.getElementById('w-days-mrr').innerHTML=won.avg_days_won_to_mrr?won.avg_days_won_to_mrr+'d':'<span class="kpi-empty">—</span>';
+  const wpa=won.won_pct_acum?.[currentKey];
+  document.getElementById('w-won-pct-acum').innerHTML=wpa!=null?(wpa*100).toFixed(1)+'%':'<span class="kpi-empty">—</span>';
+
+  const outMRR=MONTHS.map(m=>{const v=gm(m,'cierre_out');return v&&v>0?v:null;});
+  const inMRR=MONTHS.map(m=>{const v=gm(m,'cierre_in');return v&&v>0?v:null;});
+  mk('chart-won-mrr',{type:'bar',data:{labels:MONTHS_SHORT,datasets:[{label:'Outbound',data:outMRR,backgroundColor:'rgba(14,164,114,.2)',borderColor:C.a,borderWidth:1,borderRadius:4},{label:'Inbound',data:inMRR,backgroundColor:'rgba(224,69,110,.2)',borderColor:C.b,borderWidth:1,borderRadius:4}]},options:{...baseOpts,plugins:{...baseOpts.plugins,legend:{display:true,labels:{color:C.text2,font:{family:'JetBrains Mono',size:10},boxWidth:10}}},scales:{...baseOpts.scales,y:{...baseOpts.scales.y,ticks:{...baseOpts.scales.y.ticks,callback:v=>'$'+v.toLocaleString()}}}}});
+
+  const wpdData=MONTHS.map(m=>{const v=won.won_pct_acum?.[m];return v!=null&&v>0?+(v*100).toFixed(2):null;});
+  mk('chart-won-pct',{type:'line',data:{labels:MONTHS_SHORT,datasets:[{label:'% Won/demos acum.',data:wpdData,borderColor:C.c,backgroundColor:'rgba(91,95,232,.08)',tension:.3,pointRadius:4,pointBackgroundColor:C.c,fill:true,spanGaps:false}]},options:{...baseOpts,scales:{...baseOpts.scales,y:{...baseOpts.scales.y,ticks:{...baseOpts.scales.y.ticks,callback:v=>v+'%'}}}}});
+
+  const wrap=document.getElementById('won-deals-table');
+  if(!wonDeals.length){wrap.innerHTML='<div class="no-data-state">Sin datos de deals won — importá el Excel</div>';return;}
+  wrap.innerHTML=`<div class="chart-card" style="margin-bottom:0;overflow-x:auto"><table class="data-table"><thead><tr><th>Empresa</th><th>Mes</th><th>Canal</th><th>País</th><th>Industry</th><th>Type</th><th class="td-num">Pipeline</th><th class="td-num">ARR</th><th class="td-num">Días Demo→Won</th><th class="td-num">Días Won→MRR</th></tr></thead><tbody>${wonDeals.map(d=>`<tr><td><strong style="color:var(--text)">${d.company||'—'}</strong></td><td>${d.mes||'—'}</td><td><span class="badge badge-blue">${d.canal||'—'}</span></td><td>${d.pais||'—'}</td><td>${d.industry||'—'}</td><td><span class="badge badge-green">${d.type||'—'}</span></td><td class="td-num">${d.pipeline?'$'+d.pipeline.toLocaleString('es-AR'):'—'}</td><td class="td-num">${d.arr?'$'+d.arr.toLocaleString('es-AR'):'—'}</td><td class="td-num">${d.days_won??'—'}</td><td class="td-num">${d.days_mrr??'—'}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+
+// ── init ──────────────────────────────────────────────────
+renderAll();
+
+function connectSheet(){
+  var url=document.getElementById('gsu').value.trim();
+  if(!url){showToast('Pega el link del Sheet');return;}
+  var m=url.match(/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if(!m){showToast('Link invalido');return;}
+  var id=m[1];
+  showToast('Conectando...');
+  var x=new XMLHttpRequest();
+  x.open('GET','https://docs.google.com/spreadsheets/d/'+id+'/gviz/tq?tqx=out:csv&sheet=Dashboard',true);
+  x.onload=function(){
+    if(x.status!==200){showToast('Error: compartir Sheet como cualquiera puede ver');return;}
+    var rows=parseCsv(x.responseText),hdr=rows[1]||[],base=2;
+    for(var i=0;i<hdr.length;i++){if(hdr[i]==='Enero'){base=i;break;}}
+    for(var m2=0;m2<12;m2++){
+      var col=base+m2,md={};
+      for(var ri in ROW_MAP){var r=rows[parseInt(ri)];if(!r)continue;var v=r[col];if(v!==null&&typeof v==='number')md[ROW_MAP[ri]]=v;}
+      var inds={};
+      for(var ii=0;ii<INDUSTRIES.length;ii++){var ir=rows[93+ii];if(!ir)continue;var iv=ir[col];if(iv!==null&&typeof iv==='number')inds[INDUSTRIES[ii]]=iv;}
+      md.industries=inds;DATA.months[MONTHS[m2]]=md;
+    }
+    renderAll();showToast('Sheet cargado!');
+  };
+  x.onerror=function(){showToast('Error de conexion');};
+  x.send();
+}
+function parseCsv(csv){
+  var rows=[],lines=csv.split('\n');
+  for(var i=0;i<lines.length;i++){
+    if(!lines[i].trim())continue;
+    var row=[],cur='',inq=false;
+    for(var j=0;j<lines[i].length;j++){
+      var c=lines[i][j];
+      if(c==='"'){inq=!inq;}
+      else if(c===','&&!inq){row.push(toVal(cur));cur='';}
+      else{cur+=c;}
+    }
+    row.push(toVal(cur));rows.push(row);
+  }
+  return rows;
+}
+function toVal(v){
+  v=v.trim();if(!v)return null;
+  if(v[0]==='"'&&v[v.length-1]==='"')v=v.slice(1,-1);
+  var n=parseFloat(v.replace(/,/g,'.'));
+  return isNaN(n)?v:n;
+}
+</script>
+</body>
+</html>
