@@ -600,9 +600,9 @@ function connectSheet(){
     for(var i=0;i<hdr.length;i++){if(hdr[i]==='Enero'){base=i;break;}}
     for(var m2=0;m2<12;m2++){
       var col=base+m2,md={};
-      for(var ri in ROW_MAP){var r=rows[parseInt(ri)];if(!r)continue;var v=r[col];if(v!==null&&typeof v==='number')md[ROW_MAP[ri]]=v;}
+      for(var ri in ROW_MAP){var r=rows[parseInt(ri)-2];if(!r)continue;var v=r[col];if(v!==null&&typeof v==='number')md[ROW_MAP[ri]]=v;}
       var inds={};
-      for(var ii=0;ii<INDUSTRIES.length;ii++){var ir=rows[93+ii];if(!ir)continue;var iv=ir[col];if(iv!==null&&typeof iv==='number')inds[INDUSTRIES[ii]]=iv;}
+      for(var ii=0;ii<INDUSTRIES.length;ii++){var ir=rows[91+ii];if(!ir)continue;var iv=ir[col];if(iv!==null&&typeof iv==='number')inds[INDUSTRIES[ii]]=iv;}
       md.industries=inds;DATA.months[MONTHS[m2]]=md;
     }
     renderAll();showToast('Sheet cargado!');
